@@ -1,0 +1,494 @@
+-- ============================================
+-- 🔐 HUSH | ZAMANA BAĞLI KEY SİSTEMİ + MODERN HİLE MENÜSÜ
+-- ============================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local LP = Players.LocalPlayer
+
+-- ============================================
+-- 🔑 AYARLAR
+-- ============================================
+-- SENİN GITHUB SİTENİN LİNKİ
+local WEB_SITE_LINKI = "https://yusufama61li-art.github.io/Key-system/" 
+
+-- ============================================
+-- 🧠 GİZLİ ŞİFRE HESAPLAYICI (Sitedeki ile aynı)
+-- ============================================
+local function GetCurrentSecretKey()
+    -- 4 dakikalık zaman dilimini bulur (240 saniye)
+    local timeBlock = math.floor(os.time() / 240)
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local key = "HUSH-"
+    
+    for i = 0, 5 do
+        local index = ((timeBlock + (i * 7)) % 36) + 1
+        key = key .. string.sub(chars, index, index)
+    end
+    return key
+end
+
+-- ============================================
+-- 🔐 KEY EKRANI (GİRİŞ)
+-- ============================================
+local KeyGui = Instance.new("ScreenGui")
+KeyGui.Name = "HushKeySystem"
+KeyGui.ResetOnSpawn = false
+KeyGui.DisplayOrder = 9999
+KeyGui.Parent = CoreGui
+
+local Overlay = Instance.new("Frame", KeyGui)
+Overlay.Size = UDim2.new(1, 0, 1, 0)
+Overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+Overlay.BackgroundTransparency = 0.4
+Overlay.BorderSizePixel = 0
+
+local KeyBox = Instance.new("Frame", Overlay)
+KeyBox.Size = UDim2.new(0, 380, 0, 280)
+KeyBox.Position = UDim2.new(0.5, -190, 0.5, -140)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+KeyBox.BorderSizePixel = 0
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 15)
+local stroke = Instance.new("UIStroke", KeyBox)
+stroke.Color = Color3.fromRGB(80, 200, 255)
+stroke.Thickness = 1.5
+
+local title = Instance.new("TextLabel", KeyBox)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 15)
+title.BackgroundTransparency = 1
+title.Text = "🔐 HUSH | KEY SİSTEMİ"
+title.TextColor3 = Color3.fromRGB(230, 235, 255)
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 18
+
+-- 1. ADIM: URL KOPYALAMA BUTONU
+local copyBtn = Instance.new("TextButton", KeyBox)
+copyBtn.Size = UDim2.new(1, -60, 0, 40)
+copyBtn.Position = UDim2.new(0, 30, 0, 60)
+copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+copyBtn.Text = "📋 1. ADIM: KEY LİNKİNİ KOPYALA"
+copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 13
+Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 8)
+
+-- Kopyalama Mantığı
+copyBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        setclipboard(WEB_SITE_LINKI) -- Senin siteni kopyalar
+        copyBtn.Text = "✅ LİNK KOPYALANDI! (Google'a Yapıştır)"
+        copyBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 150)
+        task.wait(2)
+        copyBtn.Text = "📋 1. ADIM: KEY LİNKİNİ KOPYALA"
+        copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    end)
+end)
+
+-- Key Giriş Kutusu
+local inputBox = Instance.new("TextBox", KeyBox)
+inputBox.Size = UDim2.new(1, -60, 0, 40)
+inputBox.Position = UDim2.new(0, 30, 0, 120)
+inputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+inputBox.Text = ""
+inputBox.PlaceholderText = "2. ADIM: Sitedeki Şifreyi Buraya Yapıştır..."
+inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 120)
+inputBox.Font = Enum.Font.GothamSemibold
+inputBox.TextSize = 13
+Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 8)
+
+-- Giriş Butonu
+local submitBtn = Instance.new("TextButton", KeyBox)
+submitBtn.Size = UDim2.new(1, -60, 0, 40)
+submitBtn.Position = UDim2.new(0, 30, 0, 175)
+submitBtn.BackgroundColor3 = Color3.fromRGB(80, 200, 255)
+submitBtn.Text = "🔓 GİRİŞ YAP"
+submitBtn.TextColor3 = Color3.fromRGB(15, 15, 20)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+Instance.new("UICorner", submitBtn).CornerRadius = UDim.new(0, 8)
+
+local errorMsg = Instance.new("TextLabel", KeyBox)
+errorMsg.Size = UDim2.new(1, 0, 0, 20)
+errorMsg.Position = UDim2.new(0, 0, 0, 230)
+errorMsg.BackgroundTransparency = 1
+errorMsg.Text = ""
+errorMsg.TextColor3 = Color3.fromRGB(255, 50, 80)
+errorMsg.Font = Enum.Font.GothamBold
+errorMsg.TextSize = 12
+
+-- ============================================
+-- 🎮 HİLE MENÜSÜ (MODERN ARAYÜZ)
+-- ============================================
+local function HushMenuAc()
+    pcall(function()
+        if CoreGui:FindFirstChild("HushMenu") then CoreGui.HushMenu:Destroy() end
+    end)
+
+    local T = {
+        Bg          = Color3.fromRGB(10, 10, 15),
+        Card        = Color3.fromRGB(25, 25, 35),
+        CardHover   = Color3.fromRGB(38, 38, 55),
+        Accent      = Color3.fromRGB(80, 200, 255),
+        Accent2     = Color3.fromRGB(255, 80, 120),
+        Success     = Color3.fromRGB(80, 255, 150),
+        Danger      = Color3.fromRGB(255, 50, 80),
+        Text        = Color3.fromRGB(230, 235, 255),
+        TextDim     = Color3.fromRGB(120, 130, 160),
+        Border      = Color3.fromRGB(50, 55, 80),
+    }
+    local Easing = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+    -- ANA GUI
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "HushMenu"
+    gui.ResetOnSpawn = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.IgnoreGuiInset = true
+    gui.Parent = CoreGui
+
+    -- ANA PENCERE
+    local Main = Instance.new("Frame", gui)
+    Main.Size = UDim2.new(0, 680, 0, 460)
+    Main.Position = UDim2.new(0.5, -340, 0.5, -230)
+    Main.BackgroundColor3 = T.Bg
+    Main.BackgroundTransparency = 0.05
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 18)
+    local MainStroke = Instance.new("UIStroke", Main)
+    MainStroke.Thickness = 1.5
+    MainStroke.Transparency = 0.2
+    MainStroke.Color = T.Accent
+
+    -- Sürükleme
+    local dragging, dragStart, startPos
+    Main.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = i.Position
+            startPos = Main.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    -- ÜST BAR (Kapatma ve Minimize)
+    local TopBar = Instance.new("Frame", Main)
+    TopBar.Size = UDim2.new(1, 0, 0, 50)
+    TopBar.BackgroundTransparency = 1
+
+    local Title = Instance.new("TextLabel", TopBar)
+    Title.Size = UDim2.new(0, 250, 1, 0)
+    Title.Position = UDim2.new(0, 20, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "🤫 HUSH | SESSİZ HİLE"
+    Title.TextColor3 = T.Text
+    Title.Font = Enum.Font.GothamBlack
+    Title.TextSize = 15
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Close = Instance.new("TextButton", TopBar)
+    Close.Size = UDim2.new(0, 30, 0, 30)
+    Close.Position = UDim2.new(1, -42, 0.5, -15)
+    Close.BackgroundColor3 = T.Danger
+    Close.BackgroundTransparency = 0.85
+    Close.Text = "✕"
+    Close.TextColor3 = T.Danger
+    Close.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
+    Close.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+    local Min = Instance.new("TextButton", TopBar)
+    Min.Size = UDim2.new(0, 30, 0, 30)
+    Min.Position = UDim2.new(1, -78, 0.5, -15)
+    Min.BackgroundColor3 = T.Accent
+    Min.BackgroundTransparency = 0.85
+    Min.Text = "−"
+    Min.TextColor3 = T.Accent
+    Min.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", Min).CornerRadius = UDim.new(0, 8)
+    local isMin = false
+    Min.MouseButton1Click:Connect(function()
+        isMin = not isMin
+        TweenService:Create(Main, TweenInfo.new(0.3), {Size = isMin and UDim2.new(0, 680, 0, 50) or UDim2.new(0, 680, 0, 460)}):Play()
+    end)
+
+    -- PROFİL KARTI (Sol Üst)
+    local Profile = Instance.new("Frame", Main)
+    Profile.Size = UDim2.new(0, 210, 0, 100)
+    Profile.Position = UDim2.new(0, 15, 0, 60)
+    Profile.BackgroundColor3 = T.Card
+    Profile.BackgroundTransparency = 0.1
+    Instance.new("UICorner", Profile).CornerRadius = UDim.new(0, 14)
+
+    local AvatarBox = Instance.new("Frame", Profile)
+    AvatarBox.Size = UDim2.new(0, 64, 0, 64)
+    AvatarBox.Position = UDim2.new(0, 14, 0.5, -32)
+    AvatarBox.BackgroundColor3 = T.Accent
+    Instance.new("UICorner", AvatarBox).CornerRadius = UDim.new(1, 0)
+
+    local Avatar = Instance.new("ImageLabel", AvatarBox)
+    Avatar.Size = UDim2.new(1, -4, 1, -4)
+    Avatar.Position = UDim2.new(0, 2, 0, 2)
+    Avatar.BackgroundColor3 = T.Bg
+    pcall(function()
+        Avatar.Image = Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+    end)
+    Instance.new("UICorner", Avatar).CornerRadius = UDim.new(1, 0)
+
+    local NameLbl = Instance.new("TextLabel", Profile)
+    NameLbl.Size = UDim2.new(1, -95, 0, 22)
+    NameLbl.Position = UDim2.new(0, 90, 0, 18)
+    NameLbl.BackgroundTransparency = 1
+    NameLbl.Text = LP.DisplayName
+    NameLbl.TextColor3 = T.Text
+    NameLbl.Font = Enum.Font.GothamBold
+    NameLbl.TextSize = 15
+    NameLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Handle = Instance.new("TextLabel", Profile)
+    Handle.Size = UDim2.new(1, -95, 0, 16)
+    Handle.Position = UDim2.new(0, 90, 0, 38)
+    Handle.BackgroundTransparency = 1
+    Handle.Text = "@" .. LP.Name
+    Handle.TextColor3 = T.TextDim
+    Handle.Font = Enum.Font.GothamMedium
+    Handle.TextSize = 11
+    Handle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Badge = Instance.new("Frame", Profile)
+    Badge.Size = UDim2.new(0, 80, 0, 18)
+    Badge.Position = UDim2.new(0, 90, 0, 62)
+    Badge.BackgroundColor3 = T.Accent
+    Badge.BackgroundTransparency = 0.65
+    Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 5)
+    local BadgeTxt = Instance.new("TextLabel", Badge)
+    BadgeTxt.Size = UDim2.new(1, 0, 1, 0)
+    BadgeTxt.BackgroundTransparency = 1
+    BadgeTxt.Text = "🔊 PREMIUM"
+    BadgeTxt.TextColor3 = Color3.fromRGB(180, 230, 255)
+    BadgeTxt.Font = Enum.Font.GothamBold
+    BadgeTxt.TextSize = 9
+
+    -- SEKMELER VE İÇERİK ALANI
+    local TabsFrame = Instance.new("Frame", Main)
+    TabsFrame.Size = UDim2.new(0, 210, 0, 285)
+    TabsFrame.Position = UDim2.new(0, 15, 0, 170)
+    TabsFrame.BackgroundTransparency = 1
+    Instance.new("UIListLayout", TabsFrame).Padding = UDim.new(0, 6)
+
+    local Content = Instance.new("Frame", Main)
+    Content.Size = UDim2.new(1, -255, 1, -75)
+    Content.Position = UDim2.new(0, 240, 0, 60)
+    Content.BackgroundTransparency = 1
+
+    -- YARDIMCI FONKSİYONLAR
+    local tabs = {}
+    local currentFrame = nil
+
+    local function switchTab(tab)
+        for _, t in ipairs(tabs) do
+            t.frame.Visible = false
+            TweenService:Create(t.btn, Easing, {BackgroundColor3 = T.Card, BackgroundTransparency = 0.4}):Play()
+            TweenService:Create(t.label, Easing, {TextColor3 = T.TextDim}):Play()
+        end
+        tab.frame.Visible = true
+        currentFrame = tab.frame
+        TweenService:Create(tab.btn, Easing, {BackgroundColor3 = T.Accent, BackgroundTransparency = 0.7}):Play()
+        TweenService:Create(tab.label, Easing, {TextColor3 = T.Text}):Play()
+    end
+
+    local function CreateTab(icon, name)
+        local btn = Instance.new("TextButton", TabsFrame)
+        btn.Size = UDim2.new(1, 0, 0, 42)
+        btn.BackgroundColor3 = T.Card
+        btn.BackgroundTransparency = 0.4
+        btn.Text = ""
+        btn.AutoButtonColor = false
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+
+        local ic = Instance.new("TextLabel", btn)
+        ic.Size = UDim2.new(0, 26, 1, 0)
+        ic.Position = UDim2.new(0, 14, 0, 0)
+        ic.BackgroundTransparency = 1
+        ic.Text = icon
+        ic.TextColor3 = T.Accent
+        ic.Font = Enum.Font.GothamBold
+        ic.TextSize = 15
+
+        local lbl = Instance.new("TextLabel", btn)
+        lbl.Size = UDim2.new(1, -50, 1, 0)
+        lbl.Position = UDim2.new(0, 46, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = name
+        lbl.TextColor3 = T.TextDim
+        lbl.Font = Enum.Font.GothamSemibold
+        lbl.TextSize = 13
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+        local frame = Instance.new("ScrollingFrame", Content)
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundTransparency = 1
+        frame.ScrollBarThickness = 3
+        frame.ScrollBarImageColor3 = T.Accent
+        frame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        frame.Visible = false
+
+        local list = Instance.new("UIListLayout", frame)
+        list.Padding = UDim.new(0, 8)
+        list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            frame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 10)
+        end)
+
+        local data = {btn = btn, frame = frame, label = lbl}
+        table.insert(tabs, data)
+        btn.MouseButton1Click:Connect(function() switchTab(data) end)
+        return frame
+    end
+
+    local function Toggle(parent, icon, text, default, cb)
+        local f = Instance.new("Frame", parent)
+        f.Size = UDim2.new(1, 0, 0, 44)
+        f.BackgroundColor3 = T.Card
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 10)
+
+        local ic = Instance.new("TextLabel", f)
+        ic.Size = UDim2.new(0, 30, 1, 0)
+        ic.Position = UDim2.new(0, 14, 0, 0)
+        ic.BackgroundTransparency = 1
+        ic.Text = icon
+        ic.TextColor3 = T.Accent
+        ic.Font = Enum.Font.GothamBold
+        ic.TextSize = 16
+
+        local lbl = Instance.new("TextLabel", f)
+        lbl.Size = UDim2.new(1, -120, 1, 0)
+        lbl.Position = UDim2.new(0, 50, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = text
+        lbl.TextColor3 = T.Text
+        lbl.Font = Enum.Font.GothamSemibold
+        lbl.TextSize = 13
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+        local sw = Instance.new("TextButton", f)
+        sw.Size = UDim2.new(0, 46, 0, 24)
+        sw.Position = UDim2.new(1, -60, 0.5, -12)
+        sw.BackgroundColor3 = default and T.Success or Color3.fromRGB(60, 60, 85)
+        sw.Text = ""
+        Instance.new("UICorner", sw).CornerRadius = UDim.new(1, 0)
+
+        local knob = Instance.new("Frame", sw)
+        knob.Size = UDim2.new(0, 18, 0, 18)
+        knob.Position = default and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+        knob.BackgroundColor3 = Color3.new(1, 1, 1)
+        Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+        local state = default
+        sw.MouseButton1Click:Connect(function()
+            state = not state
+            TweenService:Create(sw, Easing, {BackgroundColor3 = state and T.Success or Color3.fromRGB(60, 60, 85)}):Play()
+            TweenService:Create(knob, Easing, {Position = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+            if cb then cb(state) end
+        end)
+    end
+
+    -- SEKMELERİ OLUŞTUR
+    local HayattaKalmaTab = CreateTab("🏃", "Hayatta Kalma")
+    local GorselTab = CreateTab("👁️", "Görsel / ESP")
+    switchTab(tabs[1])
+
+    -- HAYATTA KALMA
+    Toggle(HayattaKalmaTab, "🤫", "Sessiz Mod (Gizlilik)", false, function(s)
+        _G.HushSilent = s
+    end)
+    
+    Toggle(HayattaKalmaTab, "⚡", "Sonsuz Stamina", false, function(s)
+        _G.InfStamina = s
+    end)
+
+    -- GÖRSEL
+    Toggle(GorselTab, "🧟", "Zombi ESP", false, function(s)
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            if v:IsA("Model") and (v.Name:lower():find("zombie") or v.Name:lower():find("walker")) then
+                local hl = v:FindFirstChild("Z_ESP")
+                if s and not hl then
+                    local h = Instance.new("Highlight", v)
+                    h.Name = "Z_ESP"
+                    h.FillColor = Color3.fromRGB(255, 50, 50)
+                elseif not s and hl then
+                    hl:Destroy()
+                end
+            end
+        end
+    end)
+    
+    -- ARKA PLAN DÖNGÜLERİ (Hilelerin çalışması için)
+    task.spawn(function()
+        RunService.Heartbeat:Connect(function()
+            if _G.HushSilent then
+                local char = LP.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    pcall(function() char.Humanoid.WalkSpeed = 16 end)
+                    for _, v in pairs(char:GetDescendants()) do
+                        if v:IsA("Sound") then pcall(function() v.Volume = 0 end) end
+                    end
+                end
+            end
+            if _G.InfStamina then
+                local char = LP.Character
+                if char then
+                    for _, v in pairs(char:GetDescendants()) do
+                        if v:IsA("NumberValue") and (v.Name:lower():find("stamina") or v.Name:lower():find("energy")) then
+                            v.Value = 100
+                        end
+                    end
+                end
+            end
+        end)
+    end)
+end
+
+-- ============================================
+-- 🔓 GİRİŞ KONTROLÜ (ZAMAN KONTROLLÜ)
+-- ============================================
+submitBtn.MouseButton1Click:Connect(function()
+    local enteredKey = inputBox.Text
+    if enteredKey == "" then return end
+    
+    errorMsg.Text = "⏳ Kontrol ediliyor..."
+    errorMsg.TextColor3 = Color3.fromRGB(255, 200, 50)
+    
+    task.wait(0.5)
+    
+    -- O anki geçerli şifreyi hesaplar
+    local currentTrueKey = GetCurrentSecretKey()
+    
+    if string.gsub(enteredKey, "%s+", ""):upper() == currentTrueKey then
+        errorMsg.Text = "✅ Şifre Doğru! Menü Yükleniyor..."
+        errorMsg.TextColor3 = Color3.fromRGB(80, 255, 150)
+        task.wait(1)
+        KeyGui:Destroy()
+        HushMenuAc() -- Menüyü başlat
+    else
+        errorMsg.Text = "❌ Geçersiz Şifre! Süresi dolmuş veya yanlış."
+        errorMsg.TextColor3 = Color3.fromRGB(255, 50, 80)
+        inputBox.Text = ""
+    end
+end)
